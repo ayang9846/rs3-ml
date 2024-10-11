@@ -1,0 +1,10 @@
+LICENSE
+README.md
+pyproject.toml
+rspredict/__init__.py
+rspredict.egg-info/PKG-INFO
+rspredict.egg-info/SOURCES.txt
+rspredict.egg-info/dependency_links.txt
+rspredict.egg-info/top_level.txt
+rspredict/data/__init__.py
+rspredict/data/datarequester.py

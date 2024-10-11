@@ -1,0 +1,43 @@
+Metadata-Version: 2.1
+Name: rspredict
+Version: 0.0.1
+Summary: Runescape Grand Exchange price wrapper intended for predictive modeling.
+Author-email: Andrew Yang <ayang9846@gmail.com>
+License: MIT License
+        
+        Copyright (c) 2024 Andrew Yang
+        
+        Permission is hereby granted, free of charge, to any person obtaining a copy
+        of this software and associated documentation files (the "Software"), to deal
+        in the Software without restriction, including without limitation the rights
+        to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+        copies of the Software, and to permit persons to whom the Software is
+        furnished to do so, subject to the following conditions:
+        
+        The above copyright notice and this permission notice shall be included in all
+        copies or substantial portions of the Software.
+        
+        THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+        IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+        FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+        AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+        LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+        OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+        SOFTWARE.
+        
+Keywords: Runescape,RS3,Grand Exchange
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+License-File: LICENSE
+
+# rspredict
+The Grand Exchange is an in-player marketplace for Runescape 3 and Old School Runescape players to sell and purchase in-game items.
+Not only is it often used to sell and purchase valuable gear, but it also serves as a speculative platform for merchanting/flipping (for a more formal explanation, see [the Runescape wiki's page](https://runescape.wiki/w/Trading_and_merchanting_guide)).
+
+**rspredict** is intended to:
+1) Simplify the gathering and transformation of Grand Exchange price data.
+2) Assist with predictively modeling Runescape item prices.
+
+## Components
+### rspredict.data.datarequester
+Retrieves price data for various Runescape items and item categories. Enriches data with differenced and moving averaged prices, and social media update information.
