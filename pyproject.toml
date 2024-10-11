@@ -15,7 +15,7 @@ version = "0.0.1"
 authors = [
   { name="Andrew Yang", email="ayang9846@gmail.com" },
 ]
-description = "Runescape 3 Grand Exchange price wrapper for predictive modeling."
+description = "Runescape Grand Exchange price wrapper intended for predictive modeling."
 readme = "README.md"
 requires-python = ">=3.8"
 license = {file = "LICENSE"}
