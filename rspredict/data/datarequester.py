@@ -3,8 +3,8 @@
 # 
 # |Section|Details|
 # |---|---|
-# |Script|rs3-data-requester|
-# |Description|rs3-data-requester is used to retrieve historical price data for items in Runescape 3. This data will be transformed to predict future item prices.|
+# |Script|rs-data-requester|
+# |Description|rs-data-requester is used to retrieve historical price data for items in Runescape 3. This data will be transformed to predict future item prices.|
 # |Author|Andrew Yang|
 
 # %% [markdown]
@@ -16,6 +16,7 @@ import math
 import pandas as pd
 import datetime
 from enum import Enum
+from scipy.signal.windows import exponential
 
 # %% [markdown]
 # # **Classes**
@@ -50,7 +51,7 @@ class RSDataFilter(Enum):
     sample = "sample"
 
 # %%
-class DataRequester:
+class RSDataRequester:
     """
     A object class used to retrieve Runescape Grand Exchange item price data.
     ...
@@ -300,7 +301,7 @@ class DataRequester:
 
         return all_item_ids
     
-    def get_historical_prices(self, indiv_item_ids = [], categories = []):
+    def get_raw_historical_prices(self, indiv_item_ids = [], categories = []):
         """
         Returns a Pandas dataframe including item prices and potentially volume at a specific time point.
 
@@ -339,7 +340,7 @@ class DataRequester:
     def unix_is_weekday(self, ts):
         return 1 if datetime.datetime.fromtimestamp(ts/1000, datetime.UTC).weekday() < 5 else 0
     
-    def get_social_media_data(self):
+    def get_social_media_data(self, ref_df = None):
         """
         Returns a dataframe containing info on recent Runescape 3 updates.
 
@@ -373,7 +374,7 @@ class DataRequester:
         social_df = pd.DataFrame(social_dict_list)
 
         # Create string version of date to link social media info to specific dates.
-        social_df["date"] = social_df["dateAdded"].apply(lambda x: str(x)[:10]) #.map(datetime_to_string)
+        social_df["date_string"] = social_df["dateAdded"].apply(lambda x: str(x)[:10]) #.map(datetime_to_string)
 
         # Enrich social media history dataframe based on title of media item:
         #   Launch usually indicates a new release.
@@ -389,12 +390,17 @@ class DataRequester:
         social_df["dxp_update"] = social_df["title"].apply(lambda x: "Double XP" in x if x is not None else False)
         social_df["general_update"] = social_df["title"].apply(lambda x: "Update" in x if x is not None else False)
 
-        earliest_update_date = social_df.date.min()
-        recent_update_date = social_df.date.max()
+        # Prepare date bounds with socials and the price dataset.
+        earliest_update_date = social_df.date_string.min()
+        recent_update_date = social_df.date_string.max()
+        earliest_price_date = ref_df.date_string.min() if ref_df is not None else social_df.date_string.min()
+        recent_price_date = ref_df.date_string.max() if ref_df is not None else social_df.date_string.max()
         print(f"Earliest update: {earliest_update_date}; Most recent update: {recent_update_date}.")
-
-        sim_min_date = datetime.datetime.strptime(earliest_update_date, '%Y-%m-%d')
-        sim_max_date = datetime.datetime.strptime(recent_update_date, '%Y-%m-%d')
+        print(f"Earliest price: {earliest_price_date}; Most recent price: {recent_price_date}.")   
+        
+        # Use date bounds to expand socials/update info for all dates of the price dataset
+        sim_min_date = datetime.datetime.strptime(min(earliest_update_date, earliest_price_date), '%Y-%m-%d')
+        sim_max_date = datetime.datetime.strptime(max(recent_update_date, recent_price_date), '%Y-%m-%d')
 
         # Sets iteration range.
         range_days = pd.date_range(sim_min_date, sim_max_date).to_list()
@@ -403,22 +409,21 @@ class DataRequester:
         update_concat_list = []
         for d in range_days:
             update_concat_list.append([d.strftime('%Y-%m-%d'), False, False, False, False, False, False])
-        #print(update_concat_list[0])
 
         # Prepare social media data df
-        social_temp_df = social_df[['date', 'launch_update', 'quest_update', 'event_update', 'dxp_update', 
+        social_temp_df = social_df[['date_string', 'launch_update', 'quest_update', 'event_update', 'dxp_update', 
                             'general_update', 'boss_update']]
         social_append_df = pd.DataFrame(update_concat_list, columns = social_temp_df.columns)
         social_enriched_df = pd.concat([social_temp_df, social_append_df], axis = 0)
 
         # Get aggregate update info by date.
-        social_agg_df = social_enriched_df.groupby(["date"], as_index=False).any()
+        social_agg_df = social_enriched_df.groupby(["date_string"], as_index=False).any()
 
         # Calculate moving averages for 7, 14, and 30 days and put into dataframes.
         # FUTURE UPDATE - experiment with different window weight methods (like exponential or gaussian), to represent decaying influence of update.
-        social_agg_df_7_ma = social_agg_df[social_agg_df.columns[social_agg_df.columns!='date']].rolling(7, 1).mean()
-        social_agg_df_14_ma = social_agg_df[social_agg_df.columns[social_agg_df.columns!='date']].rolling(14, 1).mean()
-        social_agg_df_30_ma = social_agg_df[social_agg_df.columns[social_agg_df.columns!='date']].rolling(30, 1).mean()
+        social_agg_df_7_ma = social_agg_df[social_agg_df.columns[social_agg_df.columns!='date_string']].rolling(7, 1, False, "exponential").mean()
+        social_agg_df_14_ma = social_agg_df[social_agg_df.columns[social_agg_df.columns!='date_string']].rolling(14, 1, False, "exponential").mean()
+        social_agg_df_30_ma = social_agg_df[social_agg_df.columns[social_agg_df.columns!='date_string']].rolling(30, 1, False, "exponential").mean()
 
         # Rename columns for clarity.
         social_agg_df_7_ma.columns = [f"{c}_7_ma" for c in social_agg_df_7_ma.columns.to_list()]
@@ -430,7 +435,7 @@ class DataRequester:
 
         return social_agg_final_df
     
-    def get_enriched_historical_prices(self, indiv_item_ids = [], categories = []):
+    def get_historical_prices(self, indiv_item_ids = [], categories = []):
         """
         Returns a Pandas dataframe with additional features, including differenced/moving averages.
 
@@ -448,10 +453,11 @@ class DataRequester:
         """
         
         # get base historical prices
-        ge_df = self.get_historical_prices(indiv_item_ids, categories)
+        ge_df = self.get_raw_historical_prices(indiv_item_ids, categories)
 
         # add in weekday/weekend info, adjust timestamp to date
-        ge_df["date"] = ge_df['timestamp'].map(self.unix_to_date_string)
+        ge_df["date"] = ge_df['timestamp'].map(self.unix_to_datetime)
+        ge_df["date_string"] = ge_df['timestamp'].map(self.unix_to_date_string)
         ge_df["weekday"] = ge_df['timestamp'].map(self.unix_is_weekday)
 
         # Get differenced data by 1 day, 1 week, 2 weeks, and ~ 1 month (comparing price for each item by their id). Great for time series.
@@ -484,8 +490,8 @@ class DataRequester:
 
         ge_final_df = ge_enriched_df
         if self.integrate_social:
-            social_df = self.get_social_media_data()
-            ge_final_df = ge_enriched_df.merge(social_df, left_on='date', right_on='date', how = "left")
+            social_df = self.get_social_media_data(ge_final_df)
+            ge_final_df = ge_enriched_df.merge(social_df, left_on='date_string', right_on='date_string', how = "left")
 
         return ge_final_df
     
@@ -507,7 +513,7 @@ class DataRequester:
         """
         
         # get base historical prices
-        ge_df = self.get_historical_prices(indiv_item_ids, categories)
+        ge_df = self.get_raw_historical_prices(indiv_item_ids, categories)
 
         # get datetimes
         ge_df["date"] = ge_df['timestamp'].map(self.unix_to_datetime)
@@ -526,3 +532,6 @@ class DataRequester:
 
         # Export file.
         df.to_csv(f"{folder_path}{filename}", index=False)  
+
+
+
