@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: rspredict
-Version: 0.0.1
+Version: 0.0.2
 Summary: Runescape Grand Exchange price wrapper intended for predictive modeling.
 Author-email: Andrew Yang <ayang9846@gmail.com>
 License: MIT License

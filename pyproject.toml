@@ -4,14 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [metadata]
 name = "rspredict"
-version = "0.0.1"
+version = "0.0.2"
 
 [tool.setuptools.packages]
 find = {}  # Scan the project directory with the default parameters
 
 [project]
 name = "rspredict"
-version = "0.0.1"
+version = "0.0.2"
 authors = [
   { name="Andrew Yang", email="ayang9846@gmail.com" },
 ]
